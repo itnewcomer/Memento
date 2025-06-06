@@ -7,7 +7,6 @@ struct ContentView: View {
     @Query(sort: \Item.timestamp) private var items: [Item]
     @State private var selectedTab = 0 // タブ管理用
     @State private var selectedDate: Date? = Date()
-    //@State private var initialMonth: Date = Date()
     @State private var showEditor = false
     
 
@@ -58,20 +57,28 @@ struct ContentView: View {
             // レポート画面
             ReportView(
                 selectedDate: $selectedDate,
-                ratingsForDates: ratingsForDates
-            )
-            .tabItem { Label("Report", systemImage: "chart.bar.fill") }
-            .tag(1)
+                ratingsForDates: ratingsForDates,
+                items: items
+                )
+            .tabItem {
+        Label("Report", systemImage: "chart.bar.fill")
+                        }
+                        .tag(1)
 
             // 目標画面
-            Text("Goal Screen")
+            GoalView(
+                selectedDate: $selectedDate,
+                ratingsForDates: ratingsForDates,
+                items: items,
+                emotionDict: emotionDict
+            )
                 .tabItem { Label("Goal", systemImage: "target") }
                 .tag(2)
+            
+            // 設定タブ
+            SettingsView()
+                .tabItem { Label("設定", systemImage: "gearshape.fill") }
+                .tag(3)
         }
     }
-}
-
-
-#Preview {
-    ContentView()
 }

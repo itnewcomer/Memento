@@ -199,8 +199,3 @@ struct EmotionMatrixView: View {
     }
 }
 
-// --- プレビュー例 ---
-#Preview {
-    @State var selected: Set<String> = []
-    EmotionMatrixView(emotionRows: emotionRows, emotionGroups: emotionGroups, selectedEmotions: $selected)
-}

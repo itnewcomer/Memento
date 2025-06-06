@@ -13,7 +13,7 @@ struct HomeCalendarView: View {
     @State private var showEditor = false
     @State private var showDeleteAlert = false
     @State private var selectedEmotion: String? = nil
-    @State private var currentMonth: Date = Date()
+    //@State private var currentMonth: Date = Date()
     
     private var selectedItem: Item? {
         guard let selectedDate = selectedDate else { return nil }
@@ -50,16 +50,12 @@ struct HomeCalendarView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // 年・月ラベル
-                Text(currentMonth, formatter: monthYearFormatter)
-                    .font(.title2)
-                    .bold()
-                    .padding(.top, 8)
-                
+                /*ここにボタンを実装すると、突然前の月に戻る動作があるのでボタン削除
                 // 今日ボタン
                 HStack {
                     Spacer()
                     Button(action: {
+                        initialMonth = Date()
                         selectedDate = Date()
                     }) {
                         Label("today", systemImage: "calendar")
@@ -68,17 +64,16 @@ struct HomeCalendarView: View {
                     .buttonStyle(.bordered)
                     //.padding(.trailing, 20)
                 }
+                */
                 
                 // カレンダー表示
                 CalendarViewRepresentable(
                     selectedDate: $selectedDate, // ← ここもDate?型
                     initialMonth: $initialMonth,
-                    ratingsForDates: ratingsForDates,
-                    onMonthChanged: { newMonthDate in
-                        currentMonth = newMonthDate // ← ここだけ更新
-                    }
+                    ratingsForDates: ratingsForDates
+
                 )
-                //.padding(.bottom , 30)
+                .padding(.bottom , 30)
                 
                 
                 // データ表示部（サブView化）
@@ -175,10 +170,10 @@ struct CalendarDetailView: View {
     @Binding var showDeleteAlert: Bool
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             HStack {
                 Text(ratingEmoji(item.rating))
-                    .font(.system(size: 48))
+                    .font(.system(size: 36))
                     .frame(width: 60)
                 Spacer()
                 HStack(spacing: 20) {
@@ -192,7 +187,7 @@ struct CalendarDetailView: View {
                     }
                 }
             }
-            VStack(spacing: 12) {
+            VStack(spacing: 6) {
                 ForEach(0..<groupMatrix.count, id: \.self) { row in
                     HStack(spacing: 12) {
                         ForEach(0..<groupMatrix[row].count, id: \.self) { col in

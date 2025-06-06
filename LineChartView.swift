@@ -1,3 +1,4 @@
+/*
 import SwiftUI
 
 struct LineChartView: View {
@@ -48,3 +49,4 @@ struct LineChartView: View {
         }
     }
 }
+*/

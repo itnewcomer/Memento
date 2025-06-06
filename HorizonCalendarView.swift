@@ -4,7 +4,6 @@ import HorizonCalendar
 struct HorizonCalendarView: UIViewRepresentable {
     @Binding var selectedDate: Date?
     @Binding var initialMonth: Date
-    let onMonthChanged: ((Date) -> Void)?   // ← 追加！
     let calendar: Calendar
     let visibleDateRange: ClosedRange<Date>
     let monthsLayout: MonthsLayout
@@ -13,6 +12,7 @@ struct HorizonCalendarView: UIViewRepresentable {
     // カレンダーの現在表示月を記憶（初回のみジャンプ）
     class Coordinator {
         var didScrollToInitialMonth = false
+        var lastVisibleMonth: Date?
     }
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -35,25 +35,17 @@ struct HorizonCalendarView: UIViewRepresentable {
         
         // 初回 or initialMonthが変わったときだけジャンプ
         let monthDate = calendar.date(from: calendar.dateComponents([.year, .month], from: initialMonth))!
-        if !context.coordinator.didScrollToInitialMonth ||
-            !calendar.isDate(
-                uiView.visibleMonthRange
-                    .flatMap { calendar.date(from: $0.lowerBound.components) } ?? Date(),
-                equalTo: monthDate,
-                toGranularity: .month
-            ) {
+        if context.coordinator.lastVisibleMonth == nil ||
+            !calendar.isDate(context.coordinator.lastVisibleMonth!, equalTo: monthDate, toGranularity: .month) {
             uiView.scroll(
                 toMonthContaining: monthDate,
                 scrollPosition: .centered,
                 animated: false
             )
-            context.coordinator.didScrollToInitialMonth = true
-        }
-        if let monthComponents = uiView.visibleMonthRange?.lowerBound.components,
-           let monthDate = calendar.date(from: monthComponents) {
-            onMonthChanged?(monthDate)
+            context.coordinator.lastVisibleMonth = monthDate
         }
     }
+    
     private func makeContent(selectedDate: Date?) -> CalendarViewContent {
         // GnBuカラーパレット（ColorBrewer 5段階）
         let genkiColors: [Color] = [

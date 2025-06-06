@@ -3,7 +3,7 @@ import SwiftUI
 struct RecordEditorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Binding var selectedDate: Date?      // ← Date?型に変更
+    @Binding var selectedDate: Date?
     var items: [Item]
     var onComplete: () -> Void
 
@@ -25,6 +25,17 @@ struct RecordEditorView: View {
             }
         }
         return .gray
+    }
+
+    // タグ抽出関数
+    private func extractTags(from text: String) -> [String] {
+        let pattern = "#[\\p{L}0-9_]+"
+        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        let nsrange = NSRange(text.startIndex..., in: text)
+        let matches = regex?.matches(in: text, options: [], range: nsrange) ?? []
+        return matches.compactMap {
+            Range($0.range, in: text).map { String(text[$0]) }
+        }
     }
 
     var body: some View {
@@ -62,7 +73,7 @@ struct RecordEditorView: View {
                     )
                     .padding(.horizontal, 10)
 
-                    // 選択された感情のメモ入力欄
+                    // 選択された感情のメモ入力欄＋タグ表示＋案内文
                     ForEach(Array(selectedEmotions.sorted()), id: \.self) { emotion in
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
@@ -72,6 +83,14 @@ struct RecordEditorView: View {
                                 Text(emotion)
                                     .font(.headline)
                                     .foregroundColor(.white)
+                            }
+                            // ★案内文をTextEditorの「上」に分岐表示
+                            if (emotionNotes[emotion] ?? "").isEmpty {
+                                Text("#家族 #仕事 のようにタグも一緒に登録して集計できます")
+                                    .foregroundColor(.gray)
+                                    .font(.caption)
+                                    .padding(.leading, 8)
+                                    .padding(.bottom, 2)
                             }
                             TextEditor(text: Binding(
                                 get: { emotionNotes[emotion] ?? "" },
@@ -85,6 +104,23 @@ struct RecordEditorView: View {
                                     .stroke(colorForEmotion(emotion), lineWidth: 2)
                             )
                             .foregroundColor(.white)
+                            // タグ表示
+                            let tags = extractTags(from: emotionNotes[emotion] ?? "")
+                            if !tags.isEmpty {
+                                HStack {
+                                    Text("タグ:")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.7))
+                                    ForEach(tags, id: \.self) { tag in
+                                        Text(tag)
+                                            .font(.caption)
+                                            .padding(4)
+                                            .background(Color.blue.opacity(0.2))
+                                            .cornerRadius(6)
+                                    }
+                                }
+                                .padding(.top, 2)
+                            }
                         }
                         .padding(.horizontal, 20)
                     }
@@ -108,7 +144,12 @@ struct RecordEditorView: View {
             // 感情が追加された場合にメモ用のキーを作成
             let addedEmotions = newValue.subtracting(oldValue)
             for emotion in addedEmotions {
-                emotionNotes[emotion] = ""
+                // 既存データがあればそれを使い、なければ空文字
+                if let existing = currentItem?.emotionNotes[emotion] {
+                    emotionNotes[emotion] = existing
+                } else {
+                    emotionNotes[emotion] = ""
+                }
             }
             // 感情が削除された場合にメモを削除
             let removedEmotions = oldValue.subtracting(newValue)
@@ -122,25 +163,44 @@ struct RecordEditorView: View {
         if let item = currentItem {
             rating = item.rating
             selectedEmotions = Set(item.emotions)
-            emotionNotes = item.emotionNotes
+            emotionNotes = item.emotionNotes   // ここで各感情のメモをセット
+        } else {
+            rating = 3
+            selectedEmotions = []
+            emotionNotes = [:]
         }
     }
 
     private func saveData() {
         guard let selectedDate = selectedDate else { return }
+
+        // 感情ごとのタグを抽出
+        var newEmotionTags: [String: [String]] = [:]
+        for (emotion, note) in emotionNotes {
+            let tags = extractTags(from: note)
+            newEmotionTags[emotion] = tags
+        }
+
         if let item = currentItem {
             // 既存アイテム更新
             item.rating = rating
             item.emotions = Array(selectedEmotions)
             item.emotionNotes = emotionNotes
+            item.emotionTags = newEmotionTags
+            // 全体tagsも必要なら集約
+            item.tags = Array(Set(newEmotionTags.values.flatMap { $0 }))
         } else {
             // 新規アイテム作成
+            let emotionTags = newEmotionTags
+            let tags = Array(Set(emotionTags.values.flatMap { $0 }))
             let newItem = Item(
                 timestamp: Calendar.current.startOfDay(for: selectedDate),
                 rating: rating,
                 memoText: "",
                 emotions: Array(selectedEmotions),
-                emotionNotes: emotionNotes
+                emotionNotes: emotionNotes,
+                tags: tags,
+                emotionTags: emotionTags
             )
             modelContext.insert(newItem)
         }
