@@ -1,10 +1,3 @@
-//
-//  MementoApp.swift
-//  Memento
-//
-//  Created by 小池慶彦 on 2025/05/06.
-//
-
 import SwiftUI
 import SwiftData
 

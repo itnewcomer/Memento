@@ -1,9 +1,3 @@
-//
-//  StarRatingView.swift
-//  Memento
-//
-//  Created by 小池慶彦 on 2025/05/10.
-//
 import SwiftUI
 
 struct StarRatingView: View {
